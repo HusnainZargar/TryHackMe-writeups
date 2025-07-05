@@ -1,3 +1,13 @@
+# First Create a virtual environment:
+  # python3 -m venv ~/python
+  # source ~/python/bin/activate
+
+# Then Install some libraries
+  # pip3 install pycryptodome
+  # pip3 install sympy
+
+# Now it will work :)
+
 from Crypto.Util.number import *
 from sympy import isprime, nextprime
 import math
